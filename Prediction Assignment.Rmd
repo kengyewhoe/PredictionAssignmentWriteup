@@ -6,24 +6,20 @@ output: html_document
 ---
 # Introduction
 Using devices such as Jawbone Up, Nike FuelBand and Fitbit, it is now possible to collect a large amount of data about personal activity relatively inexpensively. The goal of this project is to predict the manner in which they did the exercise. This is the "classe" variable in the training set. 
-```{r, echo = FALSE}
-library(knitr)
-```
+
 # Loading the data
-```{r, include = FALSE}
+```{r}
 # Downloading the data
 trainUrl <- "http://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv"   
 testUrl <- "http://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv" 
-#download.file(trainUrl, destfile = "./train.csv", method = "curl")
-#download.file(testUrl, destfile = "./test.csv", method = "curl")
+download.file(trainUrl, destfile = "./train.csv", method = "curl")
+download.file(testUrl, destfile = "./test.csv", method = "curl")
 # Reading the data and filling missing data
 train <- read.csv("./train.csv",na.strings = c("NA", "#DIV/0!"))
 test <- read.csv("./test.csv",na.strings = c("NA", "#DIV/0!"))
 ```
 # Reading the data
 ```{r}
-kable(head(train))
-kable(head(test))
 # Getting the dimensions of the dataframe
 dim(train)
 dim(test)
@@ -72,6 +68,7 @@ modelFit <- randomForest(classe ~ .,  subTrain, tuneGrid = rfGrid)
 print(modelFit)
 plot(modelFit)
 ```
+
 This model has a very low classification error in all classes with errors all close to 0%.
 
 ## Cross validation
@@ -83,6 +80,8 @@ subTest$classe <- as.factor(subTest$classe)
 confusionMatrix(predictions, subTest$classe)
 ```
 The model is accepted because it has a high global accuracy of 0..9949 and Kappa of 0.9936 with high sensitivity and specificity for all cases
+
+\newpage
 
 # Testing the model
 ```{r}
