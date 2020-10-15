@@ -1,0 +1,93 @@
+---
+title: "Prediction Assignment Writeup"
+author: "Keng Yew Hoe"
+date: "10/16/2020"
+output: html_document
+---
+# Introduction
+Using devices such as Jawbone Up, Nike FuelBand and Fitbit, it is now possible to collect a large amount of data about personal activity relatively inexpensively. The goal of this project is to predict the manner in which they did the exercise. This is the "classe" variable in the training set. 
+```{r, echo = FALSE}
+library(knitr)
+```
+# Loading the data
+```{r, include = FALSE}
+# Downloading the data
+trainUrl <- "http://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv"   
+testUrl <- "http://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv" 
+#download.file(trainUrl, destfile = "./train.csv", method = "curl")
+#download.file(testUrl, destfile = "./test.csv", method = "curl")
+# Reading the data and filling missing data
+train <- read.csv("./train.csv",na.strings = c("NA", "#DIV/0!"))
+test <- read.csv("./test.csv",na.strings = c("NA", "#DIV/0!"))
+```
+# Reading the data
+```{r}
+kable(head(train))
+kable(head(test))
+# Getting the dimensions of the dataframe
+dim(train)
+dim(test)
+```
+# Cleaning data 
+Columns with mostly missing data are removed from the dataset. The first 7 columns are also remove as they are not needed in preparing the model.
+```{r}
+# Remove variables with near zero variance
+train<-train[,colSums(is.na(train)) == 0]
+test <-test[,colSums(is.na(test)) == 0]
+
+# Remove the first 7 columns which are not used in the prediction model
+train   <-train[,-c(1:7)]
+test <-test[,-c(1:7)]
+
+# Dimensions of the data after cleaning
+dim(train)
+dim(test)
+```
+The cleaned training data now has 19622 rows and 53 columns while the cleaned test data has 20 rows and 53 columns.
+
+# Subsetting the training data
+To build our model, we subset our training data to sub training data (75%) and sub test data (25%) for cross validation purpose. This also gets us the out-of-sample errors.
+```{r, message=FALSE}
+# Split the training data in training (75%) and testing (25%) data subset
+library(caret)
+inTrain <- createDataPartition(y=train$classe, p=0.75, list=FALSE)  
+subTrain <- train[inTrain, ]
+subTest <- train[-inTrain, ]  
+dim(subTrain)
+dim(subTest)
+```
+The sub training data has 14718 rows which is rougly 75% of the original training data.
+
+# Building the Prediction Models
+```{r, message = FALSE}
+# Random Forest
+library(rpart)
+library(randomForest)
+set.seed(555)
+rfGrid <-  expand.grid(interaction.depth = c(1, 5, 9),
+                        n.trees = (1:30)*50,
+                        shrinkage = 0.1)
+subTrain$classe <- as.factor(subTrain$classe)
+modelFit <- randomForest(classe ~ .,  subTrain, tuneGrid = rfGrid)
+print(modelFit)
+plot(modelFit)
+```
+This model has a very low classification error in all classes with errors all close to 0%.
+
+## Cross validation
+```{r}
+knitr::opts_chunk$set(comment = NA)
+# Testing the sub test data
+predictions <- predict(modelFit, newdata = subTest)
+subTest$classe <- as.factor(subTest$classe)
+confusionMatrix(predictions, subTest$classe)
+```
+The model is accepted because it has a high global accuracy of 0..9949 and Kappa of 0.9936 with high sensitivity and specificity for all cases
+
+# Testing the model
+```{r}
+# Test validation sample
+answers <- predict(modelFit, newdata = test, type = "response")
+print(answers)
+```
+The model succesfully predicted all 20 questions accurately with a score of 100% at the PML submission page
